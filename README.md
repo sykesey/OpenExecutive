@@ -222,6 +222,24 @@ Two environments, each a separate set of Fly apps, driven by branch:
 
 Both workflows use `dorny/paths-filter` to deploy only the changed app (API, UI, or both). QA is a stable twin of dev — same image and runtime, only the app name differs (`fly.api.qa.toml` / `fly.ui.qa.toml`) — so it lags `main` and stays vetted. An optional Honcho memory app (`fly.honcho.toml`) deploys independently.
 
+### Container images (GHCR)
+
+`.github/workflows/publish-images.yml` builds both deployable images. Pull
+requests build them without publishing; pushes to `main`, `qa`, or a `v*` tag
+publish them to GitHub Container Registry:
+
+| Service | Image |
+|---|---|
+| API | `ghcr.io/<owner>/openexecutive-api` |
+| UI | `ghcr.io/<owner>/openexecutive-ui` |
+
+Each published image has an immutable `sha-<commit>` tag. Branch builds also
+receive their branch tag, and the default branch image receives `latest`.
+Before the first publish, ensure the repository's Actions settings allow the
+default `GITHUB_TOKEN` to write packages; GitHub may also require the newly
+created packages to be made public or explicitly linked to the repository,
+depending on the organisation's package policy.
+
 ### Topology
 
 | App | Purpose | State |
