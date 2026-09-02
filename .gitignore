@@ -78,3 +78,5 @@ evals/results/
 ~/.claude/anvil/
 *.db
 packages/ui/tsconfig.tsbuildinfo
+packages/core/uv.lock
+packages/ui/next-env.d.ts
