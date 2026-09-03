@@ -1,0 +1,95 @@
+# Optional Honcho database. It starts at zero replicas in the base
+# kustomization; k8s/honcho-enable.yaml enables it only after its secrets and
+# adequate node capacity are in place.
+apiVersion: v1
+kind: Service
+metadata:
+  name: openexecutive-honcho-postgres
+  labels:
+    app.kubernetes.io/name: openexecutive-honcho-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: openexecutive
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: openexecutive-honcho-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openexecutive-honcho-postgres
+  labels:
+    app.kubernetes.io/name: openexecutive-honcho-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: openexecutive
+spec:
+  # Disabled by default. Enable only through k8s/honcho-enable.yaml after adding
+  # the required secrets and providing adequate cluster capacity.
+  replicas: 1
+  serviceName: openexecutive-honcho-postgres
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openexecutive-honcho-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openexecutive-honcho-postgres
+        app.kubernetes.io/component: database
+        app.kubernetes.io/part-of: openexecutive
+    spec:
+      containers:
+        - name: postgres
+          image: pgvector/pgvector:pg16
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-honcho-postgres-secrets
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-honcho-postgres-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-honcho-postgres-secrets
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 20Gi

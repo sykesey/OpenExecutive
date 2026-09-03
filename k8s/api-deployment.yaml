@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openexecutive-api
+  labels:
+    app.kubernetes.io/name: openexecutive-api
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: openexecutive
+spec:
+  # The API process contains a scheduler. More than one replica can claim and
+  # execute the same scheduled work, and the /data PVC is ReadWriteOnce.
+  replicas: 1
+  strategy:
+    type: Recreate
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openexecutive-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openexecutive-api
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: openexecutive
+    spec:
+      serviceAccountName: openexecutive
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: api
+          image: ghcr.io/sykesey/openexecutive-api
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: openexecutive-runtime
+          env:
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-api-secrets
+                  key: ANTHROPIC_API_KEY
+                  # OpenRouter is the configured provider, so this is only a
+                  # fallback for an overlay that disables OpenRouter.
+                  optional: true
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-api-secrets
+                  key: OPENROUTER_API_KEY
+            - name: BACKEND_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-api-secrets
+                  key: BACKEND_SHARED_SECRET
+            - name: EXEC_EMAIL_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-api-secrets
+                  key: EXEC_EMAIL_ADDRESS
+            - name: HONCHO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-api-secrets
+                  key: HONCHO_API_KEY
+                  # Honcho is disabled by default. This becomes required only
+                  # after the operator enables it in an environment overlay.
+                  optional: true
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: openexecutive-api-data

@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openexecutive-ui
+  labels:
+    app.kubernetes.io/name: openexecutive-ui
+    app.kubernetes.io/component: ui
+    app.kubernetes.io/part-of: openexecutive
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openexecutive-ui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openexecutive-ui
+        app.kubernetes.io/component: ui
+        app.kubernetes.io/part-of: openexecutive
+    spec:
+      serviceAccountName: openexecutive
+      # Dockerfile.ui creates `nextjs` as UID/GID 1001 but selects it by
+      # name. Set the numeric identity here so the kubelet can enforce and
+      # verify the non-root requirement before it starts the container.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+      containers:
+        - name: ui
+          image: ghcr.io/sykesey/openexecutive-ui
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: openexecutive-runtime
+          env:
+            # Keep traffic on the cluster network. The UI's server-side proxy
+            # adds BACKEND_SHARED_SECRET, so the API Service stays ClusterIP.
+            - name: BACKEND_BASE_URL
+              value: http://openexecutive-api:8000
+            - name: AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-ui-secrets
+                  key: AUTH_SECRET
+            - name: AUTH_GOOGLE_ID
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-ui-secrets
+                  key: AUTH_GOOGLE_ID
+            - name: AUTH_GOOGLE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-ui-secrets
+                  key: AUTH_GOOGLE_SECRET
+            - name: AUTH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-ui-secrets
+                  key: AUTH_URL
+            - name: ALLOWED_EMAILS
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-ui-secrets
+                  key: ALLOWED_EMAILS
+            - name: BACKEND_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: openexecutive-ui-secrets
+                  key: BACKEND_SHARED_SECRET
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true

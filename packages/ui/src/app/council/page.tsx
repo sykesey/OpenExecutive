@@ -378,7 +378,7 @@ export default function CouncilPage() {
                       onChange={(e) => setDraft({ ...draft, deep_reasoning: e.target.checked })}
                       className="rounded border-line-strong bg-surface"
                     />
-                    Deep reasoning (adaptive thinking — Opus only)
+                    Deep reasoning (where supported)
                     <span className="text-[10px] text-fg-subtle">
                       default: {detail.deep_reasoning_default ? "on" : "off"}
                     </span>

@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openexecutive-runtime
+  labels:
+    app.kubernetes.io/part-of: openexecutive
+data:
+  VECTOR_STORE_PATH: /data/chroma_db
+  COMPANY_PROFILE_PATH: /data/company/profile.yaml
+  EPISODIC_DB_PATH: /data/episodic_memory.db
+  MCP_SERVERS_CONFIG_PATH: /data/company/mcp_servers.json
+  ENABLE_CACHING: "true"
+  # Route Claude models through OpenRouter and expose its curated non-Claude
+  # model choices in the Council UI. Override in an environment overlay only
+  # when a direct-Anthropic deployment is intended.
+  OPENROUTER_ENABLED: "true"
+  OPENROUTER_BASE_URL: https://openrouter.ai/api/v1
+  OPENROUTER_APP_TITLE: Open Executive
+  # Honcho is provisioned separately through k8s/honcho-enable.yaml. Keep its
+  # client disabled until a scoped HONCHO_API_KEY has been minted and added to
+  # the API secret; its failure mode is otherwise deliberately fail-closed.
+  HONCHO_ENABLED: "false"
+  HONCHO_BASE_URL: http://openexecutive-honcho:8000
+  HONCHO_WORKSPACE_ID: openexec
+  SCHEDULER_ENABLED: "true"
+  WORKSPACE_MCP_CREDENTIALS_DIR: /data/google_credentials
+  WORKSPACE_MCP_TOOL_TIER: complete
+  GWORKSPACE_AUTH_MODE: oauth
+  AUTH_TRUST_HOST: "true"
+  # Replace with the public UI origin before applying. The UI normally proxies
+  # requests server-side, but this protects any browser-to-API requests too.
+  BACKEND_ALLOWED_ORIGINS: https://openexecutive.example.com

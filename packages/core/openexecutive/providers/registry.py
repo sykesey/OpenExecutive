@@ -20,11 +20,16 @@ from openexecutive.providers.openai_compatible import OpenAICompatibleProvider
 from openexecutive.providers.openrouter_provider import OpenRouterProvider
 from openexecutive.providers.provider import LLMProvider
 
-# Anthropic-direct slugs — used as canonical model names everywhere in
-# the codebase (config defaults, agent class defaults, override DB).
+# Anthropic-direct frontier slugs — used as canonical model names in the
+# defaults, Agent Council and direct Anthropic calls. Keep this deliberately
+# small: the Council is an agentic workflow, not a raw provider catalogue.
+#
+# These are verified against Anthropic's API and OpenRouter's tool-capable
+# catalogue on 2026-09-04. See OPENROUTER_MODELS for the equivalent curated
+# cross-provider set.
 ANTHROPIC_DIRECT_MODELS: list[str] = [
-    "claude-opus-4-7",
-    "claude-sonnet-4-6",
+    "claude-opus-5",
+    "claude-sonnet-5",
     "claude-haiku-4-5-20251001",
 ]
 
@@ -33,27 +38,33 @@ ANTHROPIC_DIRECT_MODELS: list[str] = [
 # PAID models only: the rate-limited ``:free`` tier (and the utility_fast-
 # only free-model matrix) was removed — its 429s surfaced as user-visible
 # errors and the per-agent free-model surface was more than it earned.
-# BYO-model routing through OpenRouter is unchanged — add a slug here to
-# surface it in the Council UI dropdown.
+# BYO-model routing through OpenRouter is unchanged — add a verified,
+# tool-capable frontier slug here to surface it in the Council UI dropdown.
 OPENROUTER_MODELS: list[str] = [
-    "openai/gpt-5",
-    "openai/gpt-5-mini",
-    "openai/gpt-5-nano",
-    "google/gemini-2.5-pro",
-    "google/gemini-2.5-flash",
-    "google/gemini-2.5-flash-lite",
-    "meta-llama/llama-3.3-70b-instruct",
-    "deepseek/deepseek-r1",
-    "x-ai/grok-4",
+    # OpenAI: capability / balanced / fast tiers.
+    "openai/gpt-5.6-sol",
+    "openai/gpt-5.6-terra",
+    "openai/gpt-5.6-luna",
+    # Other current frontier models, one intentional choice per lab/family.
+    "google/gemini-3.1-pro-preview",
+    "x-ai/grok-4.20",
+    "deepseek/deepseek-v4-pro",
+    "moonshotai/kimi-k3",
+    "z-ai/glm-5.3",
 ]
 
 
 # Per-Claude OpenRouter slug. The Anthropic-direct name is the registry
 # key; the value is what we send when OPENROUTER_ENABLED is on.
 _CLAUDE_OPENROUTER_SLUGS: dict[str, str] = {
+    "claude-opus-5": "anthropic/claude-opus-5",
+    "claude-sonnet-5": "anthropic/claude-sonnet-5",
+    "claude-haiku-4-5-20251001": "anthropic/claude-haiku-4.5",
+    # Legacy aliases remain routable so a saved override or an explicitly set
+    # environment variable continues to work after the Council moves to the
+    # new curated default set. They are intentionally not offered in the UI.
     "claude-opus-4-7": "anthropic/claude-opus-4.7",
     "claude-sonnet-4-6": "anthropic/claude-sonnet-4.6",
-    "claude-haiku-4-5-20251001": "anthropic/claude-haiku-4.5",
 }
 
 

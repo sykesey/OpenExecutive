@@ -33,15 +33,20 @@ from openexecutive.providers import registry as registry_mod  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _reset_singleton() -> Any:
+def _reset_singleton(monkeypatch: pytest.MonkeyPatch) -> Any:
+    # A developer's local .env may enable OpenRouter. These provider-contract
+    # tests exercise the direct-Anthropic default unless they explicitly stub
+    # registry settings below.
+    monkeypatch.setenv("OPENROUTER_ENABLED", "false")
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     registry_mod._reset_for_tests()
     yield
     registry_mod._reset_for_tests()
 
 
 def test_get_provider_returns_same_singleton_across_claude_calls() -> None:
-    a = get_provider("claude-sonnet-4-6")
-    b = get_provider("claude-opus-4-7")
+    a = get_provider("claude-sonnet-5")
+    b = get_provider("claude-opus-5")
     # Different Claude model args resolve to the same Anthropic-direct
     # singleton — reconstructing the SDK client per request would burn
     # ~10 ms on every specialist call.
@@ -49,10 +54,17 @@ def test_get_provider_returns_same_singleton_across_claude_calls() -> None:
 
 
 def test_returned_provider_satisfies_protocol() -> None:
-    provider = get_provider("claude-sonnet-4-6")
+    provider = get_provider("claude-sonnet-5")
     assert isinstance(provider, LLMProvider)
     assert hasattr(provider, "messages_create")
     assert hasattr(provider, "messages_stream")
+
+
+def test_legacy_claude_override_remains_routable() -> None:
+    """Moving the UI forward must not strand a previously saved override."""
+    from openexecutive.providers.anthropic_provider import AnthropicProvider
+
+    assert isinstance(get_provider("claude-sonnet-4-6"), AnthropicProvider)
 
 
 def test_messages_create_proxies_kwargs_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -71,9 +83,9 @@ def test_messages_create_proxies_kwargs_unchanged(monkeypatch: pytest.MonkeyPatc
     )
     registry_mod._reset_for_tests()
 
-    provider = get_provider("claude-sonnet-4-6")
+    provider = get_provider("claude-sonnet-5")
     payload = {
-        "model": "claude-sonnet-4-6",
+        "model": "claude-sonnet-5",
         "max_tokens": 1024,
         "system": [
             {
@@ -101,11 +113,11 @@ def test_messages_stream_returns_sdk_context_manager_unchanged(
     )
     registry_mod._reset_for_tests()
 
-    provider = get_provider("claude-sonnet-4-6")
+    provider = get_provider("claude-sonnet-5")
     # Note: messages_stream is sync; the SDK returns the CM and the caller
     # uses it in ``async with``. The provider must not wrap it in another
     # layer that would change ``stream.get_final_message`` semantics.
-    assert provider.messages_stream(model="claude-sonnet-4-6") is sentinel
+    assert provider.messages_stream(model="claude-sonnet-5") is sentinel
 
 
 def test_messages_create_accepts_per_request_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -123,10 +135,10 @@ def test_messages_create_accepts_per_request_timeout(monkeypatch: pytest.MonkeyP
     )
     registry_mod._reset_for_tests()
 
-    provider = get_provider("claude-sonnet-4-6")
+    provider = get_provider("claude-sonnet-5")
     asyncio.run(
         provider.messages_create(
-            model="claude-sonnet-4-6", max_tokens=10, messages=[], timeout=42.0
+            model="claude-sonnet-5", max_tokens=10, messages=[], timeout=42.0
         )
     )
     assert captured["timeout"] == 42.0
@@ -147,7 +159,7 @@ def test_anthropic_provider_constructs_lazy_only_once(
     )
     registry_mod._reset_for_tests()
     for _ in range(5):
-        get_provider("claude-sonnet-4-6")
+        get_provider("claude-sonnet-5")
     assert construction_count == 1
 
 
@@ -193,7 +205,7 @@ def test_claude_model_with_openrouter_off_routes_to_anthropic(
     registry_mod._reset_for_tests()
     from openexecutive.providers.anthropic_provider import AnthropicProvider
 
-    provider = get_provider("claude-sonnet-4-6")
+    provider = get_provider("claude-sonnet-5")
     assert isinstance(provider, AnthropicProvider)
 
 
@@ -207,7 +219,7 @@ def test_claude_model_with_openrouter_on_routes_to_openrouter(
     registry_mod._reset_for_tests()
     from openexecutive.providers.openrouter_provider import OpenRouterProvider
 
-    provider = get_provider("claude-sonnet-4-6")
+    provider = get_provider("claude-sonnet-5")
     assert isinstance(provider, OpenRouterProvider)
 
 
@@ -253,7 +265,7 @@ def test_anthropic_singleton_distinct_from_openrouter_singleton(
         lambda: _settings_stub(enabled=True),
     )
     registry_mod._reset_for_tests()
-    claude_provider = get_provider("claude-sonnet-4-6")
+    claude_provider = get_provider("claude-sonnet-5")
     or_provider = get_provider("openai/gpt-5")
     # Both happen to be the OpenRouter provider when enabled=True, so they
     # ARE the same. But when toggled off, the Claude path returns Anthropic.
@@ -263,7 +275,7 @@ def test_anthropic_singleton_distinct_from_openrouter_singleton(
         lambda: _settings_stub(enabled=False),
     )
     registry_mod._reset_for_tests()
-    direct_claude = get_provider("claude-sonnet-4-6")
+    direct_claude = get_provider("claude-sonnet-5")
     assert direct_claude is not or_provider
     assert direct_claude is not claude_provider
 
@@ -292,6 +304,9 @@ def test_allowed_models_includes_openrouter_set_only_when_enabled(
     assert on == [*ANTHROPIC_DIRECT_MODELS, *OPENROUTER_MODELS]
     # Both sets contain entries (catch the case where one list was emptied).
     assert len(on) > len(off)
+    assert "claude-opus-5" in on
+    assert "openai/gpt-5.6-sol" in on
+    assert "google/gemini-3.1-pro-preview" in on
 
 
 # --------------------------------------------------------------------------
@@ -379,6 +394,6 @@ def test_claude_without_key_or_openrouter_raises_actionable_400(
 
     _local_stub(monkeypatch, enabled=False, anthropic_key=None)
     with pytest.raises(HTTPException) as exc_info:
-        get_provider("claude-sonnet-4-6")
+        get_provider("claude-sonnet-5")
     assert exc_info.value.status_code == 400
     assert "ANTHROPIC_API_KEY" in exc_info.value.detail

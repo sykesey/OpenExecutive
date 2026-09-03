@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openexecutive-api-data
+  labels:
+    app.kubernetes.io/name: openexecutive-api
+    app.kubernetes.io/part-of: openexecutive
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  # Deliberately omit storageClassName so the target cluster's default class is
+  # used. Set it explicitly in an overlay if the cluster has no default.

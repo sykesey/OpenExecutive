@@ -33,7 +33,7 @@ All responses come from one consistent executive voice. The internal agent archi
 ```
 User message
     ↓
-Executive Orchestrator (claude-sonnet-4-6)
+Executive Orchestrator (claude-sonnet-5)
     ↓ tool use → parallel specialist calls
 CSO / CFO / CHRO / GC / COO / CMO / CPO / Board
     ↓ each specialist retrieves relevant context from ChromaDB
@@ -57,8 +57,8 @@ See [docs/architecture.md](docs/architecture.md) for the full design.
 | Layer | Choice |
 |---|---|
 | LLM backbone | Anthropic Claude API |
-| Default model | `claude-sonnet-4-6` (Executive + most specialists) |
-| Deep reasoning | `claude-opus-4-7` (CSO, CFO, GC, Board — with extended thinking) |
+| Default model | `claude-sonnet-5` (Executive + most specialists) |
+| Deep reasoning | `claude-opus-5` (CSO, CFO, GC, Board — with extended thinking) |
 | Backend | Python 3.11 + FastAPI |
 | Package manager | `uv` |
 | Vector store | ChromaDB (local, embedded) |
@@ -306,8 +306,8 @@ the app refuses to start.
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `ANTHROPIC_API_KEY` | Yes¹ | — | Anthropic API key |
-| `DEFAULT_MODEL` | No | `claude-sonnet-4-6` | Executive + most specialists |
-| `DEEP_REASONING_MODEL` | No | `claude-opus-4-7` | CSO, CFO, GC, Board |
+| `DEFAULT_MODEL` | No | `claude-sonnet-5` | Executive + most specialists |
+| `DEEP_REASONING_MODEL` | No | `claude-opus-5` | CSO, CFO, GC, Board |
 | `VECTOR_STORE_PATH` | No | `./chroma_db` | ChromaDB directory |
 | `EPISODIC_DB_PATH` | No | `./episodic_memory.db` | SQLite for episodic memory |
 | `COMPANY_PROFILE_PATH` | No | `./company/profile.yaml` | Company profile |
@@ -403,7 +403,7 @@ pytest packages/core/tests/unit/ -v
 
 ## Evaluation System
 
-`evals/` contains 29 scenarios covering all 8 domains, scored by `claude-opus-4-7` as an LLM-as-judge. Each scenario defines a query, simulated company context, expected topics, required specialist routing, and a domain-specific rubric. Five scoring dimensions (persona coherence, domain accuracy, company context utilization, routing quality, actionability) are each rated 1–5. The CI gate requires ≥ 3.5/5 average; any dimension dropping > 10% vs `main` fails the PR.
+`evals/` contains 29 scenarios covering all 8 domains, scored by `claude-opus-5` as an LLM-as-judge. Each scenario defines a query, simulated company context, expected topics, required specialist routing, and a domain-specific rubric. Five scoring dimensions (persona coherence, domain accuracy, company context utilization, routing quality, actionability) are each rated 1–5. The CI gate requires ≥ 3.5/5 average; any dimension dropping > 10% vs `main` fails the PR.
 
 ## Privacy
 

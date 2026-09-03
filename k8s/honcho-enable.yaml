@@ -1,0 +1,18 @@
+# Apply only after `kubectl apply -k k8s/` has installed the base resources,
+# the Honcho secrets exist, and the cluster has adequate capacity. This changes
+# the intentionally disabled base workloads to one replica each.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openexecutive-honcho-postgres
+  namespace: openexecutive
+spec:
+  replicas: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openexecutive-honcho
+  namespace: openexecutive
+spec:
+  replicas: 1

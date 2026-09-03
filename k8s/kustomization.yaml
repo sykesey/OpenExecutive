@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openexecutive
+
+resources:
+  - namespace.yaml
+  - service-account.yaml
+  - configmap.yaml
+  - api-pvc.yaml
+  - api-deployment.yaml
+  - ui-deployment.yaml
+  - honcho-postgres.yaml
+  - honcho-deployment.yaml
+  - services.yaml
+
+# Pin these to the immutable sha-<commit> tags emitted by the Publish container
+# images workflow before a production rollout. `latest` is useful only for a
+# first non-production installation.
+images:
+  - name: ghcr.io/sykesey/openexecutive-ui
+    newTag: sha-e109944
+  - name: ghcr.io/sykesey/openexecutive-api
+    newTag: sha-e109944
+  - name: ghcr.io/sykesey/openexecutive-honcho
+    # The Honcho image is first published by the new CI job. Pin this to its
+    # sha-<commit> tag before enabling the optional Honcho overlay.
+    newTag: latest
