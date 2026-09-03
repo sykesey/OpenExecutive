@@ -240,6 +240,13 @@ default `GITHUB_TOKEN` to write packages; GitHub may also require the newly
 created packages to be made public or explicitly linked to the repository,
 depending on the organisation's package policy.
 
+### Kubernetes
+
+The [k8s](k8s/) kustomization deploys the published API and UI images. It keeps
+the stateful scheduler API at one replica with a persistent volume, and runs
+the stateless UI behind a ClusterIP Service. See [k8s/README.md](k8s/README.md)
+for GHCR access, runtime-secret, domain, ingress, and rollout prerequisites.
+
 ### Topology
 
 | App | Purpose | State |

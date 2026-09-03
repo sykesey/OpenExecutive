@@ -73,10 +73,12 @@ RUN /app/.venv/bin/python -c \
         "from fastembed import TextEmbedding; \
          TextEmbedding(model_name='BAAI/bge-small-en-v1.5', cache_dir='/app/.cache/fastembed')"
 
-# Drop privileges. Matches Honcho's official image's `app` user.
-RUN useradd --create-home --shell /bin/bash app \
+# Drop privileges. A fixed numeric identity lets Kubernetes verify
+# `runAsNonRoot` before container start (a named USER alone is ambiguous to
+# the kubelet).
+RUN useradd --uid 10001 --create-home --shell /bin/bash app \
     && chown -R app:app /app
-USER app
+USER 10001:10001
 
 # Put the uv-managed venv on PATH so Fly's `[processes]` commands can
 # invoke `fastapi` / `python` directly without an `uv run` prefix
