@@ -13,7 +13,7 @@ data:
   # Keep Kubernetes deployments aligned with the current curated Council
   # defaults. These remain normal environment overrides: an environment
   # overlay can still choose a different supported model for any tier.
-  DEFAULT_MODEL: anthropic/claude-sonnet-5
+  DEFAULT_MODEL: google/gemini-3.7-flash
   DEEP_REASONING_MODEL: anthropic/claude-opus-5
   RESEARCH_MODEL: anthropic/claude-sonnet-5
   ROUTING_MODEL: anthropic/claude-haiku-4.5

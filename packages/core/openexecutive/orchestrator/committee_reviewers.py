@@ -21,6 +21,11 @@ logger = logging.getLogger(__name__)
 
 _VALID_SEVERITIES = {"low", "medium", "high"}
 
+# Gemini-family models can spend part of their generation budget reasoning
+# before emitting the requested critique JSON. Keep enough headroom for a
+# complete structured response rather than silently degrading it to a no-op.
+_REVIEWER_MAX_TOKENS = 2048
+
 # Cap per-specialist excerpt fed to a reviewer. ~250 tokens — enough for
 # the reviewer to spot domain errors, small enough to stay cheap.
 _SPECIALIST_EXCERPT_CHARS = 1500
@@ -111,7 +116,7 @@ class Reviewer:
         try:
             msg = await get_provider(self.model).messages_create(
                 model=self.model,
-                max_tokens=1024,
+                max_tokens=_REVIEWER_MAX_TOKENS,
                 system=[
                     {
                         "type": "text",
@@ -121,8 +126,12 @@ class Reviewer:
                 ],
                 messages=[{"role": "user", "content": user_content}],
             )
-            text_blocks = [b for b in msg.content if b.type == "text"]
-            text = text_blocks[0].text if text_blocks else ""
+            text = "\n".join(
+                block.text
+                for block in msg.content
+                if getattr(block, "type", None) == "text"
+                and isinstance(getattr(block, "text", None), str)
+            )
         except Exception:
             logger.exception("Reviewer %s API call failed", self.name)
             return Critique(
@@ -132,9 +141,9 @@ class Reviewer:
                 suggested_edits="",
             )
 
-        return self._parse(text)
+        return self._parse(text, stop_reason=getattr(msg, "stop_reason", None))
 
-    def _parse(self, text: str) -> Critique:
+    def _parse(self, text: str, *, stop_reason: str | None = None) -> Critique:
         """Parse reviewer JSON. Salvage by finding the outermost {...}.
         On any failure return a no-op low-severity critique."""
         try:
@@ -142,7 +151,9 @@ class Reviewer:
             end = text.rfind("}") + 1
             if start < 0 or end <= start:
                 raise ValueError("no JSON object found")
-            data = json.loads(text[start:end])
+            # Some OpenRouter upstreams emit literal newlines in string fields.
+            # They are recoverable JSON for our plain-text critique contract.
+            data = json.loads(text[start:end], strict=False)
             severity = str(data.get("severity", "low")).strip().lower()
             if severity not in _VALID_SEVERITIES:
                 severity = "low"
@@ -152,9 +163,15 @@ class Reviewer:
                 critique=str(data.get("critique", "")).strip(),
                 suggested_edits=str(data.get("suggested_edits", "")).strip(),
             )
-        except Exception:
+        except Exception as exc:
             logger.warning(
-                "Reviewer %s produced unparseable output: %s", self.name, text[:200]
+                "Reviewer output unparseable reviewer=%s model=%s chars=%d "
+                "stop_reason=%s error=%s",
+                self.name,
+                self.model,
+                len(text),
+                stop_reason or "unknown",
+                exc,
             )
             return Critique(
                 reviewer_name=self.name,

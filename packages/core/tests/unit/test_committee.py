@@ -149,6 +149,27 @@ def test_reviewer_salvages_json_with_prose_around_it() -> None:
     assert c.critique == "hedging"
 
 
+def test_reviewer_accepts_literal_newlines_in_json_string_fields() -> None:
+    text = (
+        '{"severity":"medium","critique":"State the decision first.\n'
+        'Then give the supporting evidence.","suggested_edits":"Lead with the call."}'
+    )
+    stub = _StubProvider({"quality reviewer": text})
+    r = build_quality_reviewer(model="m")
+    with _with_provider(stub):
+        c = asyncio.run(r.critique(user_message="q", draft="d"))
+    assert c.severity == "medium"
+    assert c.critique == "State the decision first.\nThen give the supporting evidence."
+
+
+def test_reviewer_has_budget_for_reasoning_and_complete_json() -> None:
+    stub = _StubProvider({"quality reviewer": '{"severity":"low","critique":"x"}'})
+    r = build_quality_reviewer(model="m")
+    with _with_provider(stub):
+        asyncio.run(r.critique(user_message="q", draft="d"))
+    assert stub.calls[0]["max_tokens"] == 2048
+
+
 def test_reviewer_returns_low_severity_on_malformed_json() -> None:
     stub = _StubProvider({"quality reviewer": "this is not JSON at all"})
     r = build_quality_reviewer(model="m")

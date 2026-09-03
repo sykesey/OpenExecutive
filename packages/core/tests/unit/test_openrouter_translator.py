@@ -392,6 +392,30 @@ def test_response_synthesizes_text_block() -> None:
     assert msg.usage.output_tokens == 5
 
 
+def test_response_synthesizes_text_block_from_typed_content_parts() -> None:
+    msg = from_openai_response(
+        {
+            "id": "chatcmpl-gemini",
+            "model": "google/gemini-3.7-flash",
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": [
+                            {"type": "text", "text": "First part."},
+                            {"type": "text", "text": "Second part."},
+                        ],
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+        }
+    )
+    assert len(msg.content) == 1
+    assert msg.content[0].type == "text"
+    assert msg.content[0].text == "First part.\n\nSecond part."
+
+
 def test_response_surfaces_cost_when_present() -> None:
     """OpenRouter reports the charged USD as usage.cost when accounting is on;
     it lands on Message.usage.cost for the cache_event audit row. Absent →

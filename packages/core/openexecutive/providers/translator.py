@@ -494,8 +494,11 @@ def from_openai_response(body: dict[str, Any]) -> SimpleNamespace:
     msg = choice.get("message") or {}
     content_blocks: list[SimpleNamespace] = []
 
-    text = msg.get("content")
-    if isinstance(text, str) and text:
+    # OpenRouter upstreams commonly return a string here, but Gemini may use
+    # OpenAI-style typed content parts. Normalise both shapes so downstream
+    # callers always receive the Anthropic-shaped text blocks they expect.
+    text = _content_to_text(msg.get("content"))
+    if text:
         content_blocks.append(_block("text", text=_strip_cite_markup(text)))
 
     for call in msg.get("tool_calls") or []:
