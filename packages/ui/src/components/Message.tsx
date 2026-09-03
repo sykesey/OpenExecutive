@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import BrandMark from "@/components/BrandMark";
+import Icon from "@/components/Icon";
 import type { ActionTaken } from "@/lib/api";
 
 interface MessageProps {
@@ -35,6 +37,32 @@ function ActionChip({ action }: { action: ActionTaken }) {
 }
 
 export default function Message({ role, content, isStreaming, actions }: MessageProps) {
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
+  async function handleCopy() {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(content);
+      } else {
+        // Clipboard access requires a secure context. Keep copying available
+        // for local HTTP deployments as well.
+        const textarea = document.createElement("textarea");
+        textarea.value = content;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (!copied) throw new Error("Clipboard fallback failed");
+      }
+      setCopyState("copied");
+    } catch {
+      setCopyState("failed");
+    }
+    window.setTimeout(() => setCopyState("idle"), 1500);
+  }
+
   if (role === "user") {
     return (
       <div className="flex justify-end mb-6">
@@ -54,7 +82,33 @@ export default function Message({ role, content, isStreaming, actions }: Message
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="text-xs text-fg-muted mb-2 font-medium tracking-wide uppercase">Executive</div>
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="text-xs text-fg-muted font-medium tracking-wide uppercase">Executive</div>
+          {!isStreaming && content && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              aria-label={
+                copyState === "copied"
+                  ? "Response copied"
+                  : copyState === "failed"
+                    ? "Copy response failed"
+                    : "Copy response"
+              }
+              title="Copy response"
+              className="inline-flex items-center gap-1.5 min-h-touch px-2 py-1 rounded-md text-xs text-fg-muted hover:text-fg hover:bg-surface-overlay transition-colors cursor-pointer"
+            >
+              <Icon name={copyState === "copied" ? "check" : "clipboard"} size="w-3.5 h-3.5" />
+              <span>
+                {copyState === "copied"
+                  ? "Copied"
+                  : copyState === "failed"
+                    ? "Copy failed"
+                    : "Copy"}
+              </span>
+            </button>
+          )}
+        </div>
         <div className="prose prose-invert prose-sm max-w-none
           prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:bg-surface-overlay prose-code:before:content-none prose-code:after:content-none
           prose-pre:bg-surface-overlay prose-pre:border
