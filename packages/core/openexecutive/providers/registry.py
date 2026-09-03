@@ -41,14 +41,20 @@ ANTHROPIC_DIRECT_MODELS: list[str] = [
 # BYO-model routing through OpenRouter is unchanged — add a verified,
 # tool-capable frontier slug here to surface it in the Council UI dropdown.
 OPENROUTER_MODELS: list[str] = [
+    "anthropic/claude-opus-5",
+    "anthropic/claude-sonnet-5",
+    "anthropic/claude-haiku-4.5",
     # OpenAI: capability / balanced / fast tiers.
     "openai/gpt-5.6-sol",
     "openai/gpt-5.6-terra",
     "openai/gpt-5.6-luna",
     # Other current frontier models, one intentional choice per lab/family.
     "google/gemini-3.1-pro-preview",
+    "google/gemini-3.8-flash",
+    "google/gemini-3.7-flash",
     "x-ai/grok-4.20",
     "deepseek/deepseek-v4-pro",
+    "deepseek/deepseek-v4-flash-0731",
     "moonshotai/kimi-k3",
     "z-ai/glm-5.3",
 ]

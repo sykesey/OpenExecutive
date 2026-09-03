@@ -32,6 +32,12 @@ committed to the repository.
    origin. Configure that same origin as `AUTH_URL` and as the Google OAuth
    callback origin: `<origin>/api/auth/callback/google`.
 
+The base ConfigMap pins the current Council defaults: `claude-sonnet-5` for
+general and research calls, `claude-opus-5` for deep-reasoning specialists,
+and `claude-haiku-4-5-20251001` for lightweight routing. Override these in an
+environment-specific ConfigMap overlay only when you intentionally want a
+different supported model tier.
+
 ## Apply and verify
 
 ```sh

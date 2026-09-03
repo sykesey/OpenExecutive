@@ -10,6 +10,13 @@ data:
   EPISODIC_DB_PATH: /data/episodic_memory.db
   MCP_SERVERS_CONFIG_PATH: /data/company/mcp_servers.json
   ENABLE_CACHING: "true"
+  # Keep Kubernetes deployments aligned with the current curated Council
+  # defaults. These remain normal environment overrides: an environment
+  # overlay can still choose a different supported model for any tier.
+  DEFAULT_MODEL: anthropic/claude-sonnet-5
+  DEEP_REASONING_MODEL: anthropic/claude-opus-5
+  RESEARCH_MODEL: anthropic/claude-sonnet-5
+  ROUTING_MODEL: anthropic/claude-haiku-4.5
   # Route Claude models through OpenRouter and expose its curated non-Claude
   # model choices in the Council UI. Override in an environment overlay only
   # when a direct-Anthropic deployment is intended.
