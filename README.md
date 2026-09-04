@@ -4,7 +4,7 @@
 
 This repository is a fork of the original OpenExecutive codebase (https://github.com/SenteLabsAI/OpenExecutive), configured with additional items:
 - **Kubernetes Support** - kustomization-style deployment available in the ``k8s/`` directory. (See https://github.com/sykesey/OpenExecutive/blob/main/k8s/README.md )
-- **Additional Models** - Available models have been modified to support frontier models supporting tool-calling. E.g. google/gemini-3.7-flash is available and works reasonably well at significant cost savings over the default Claude.
+- **Additional Models** - Available models have been modified to support frontier models supporting tool-calling. E.g. ``google/gemini-3.7-flash`` is available and works reasonably well at significant cost savings over the default Claude.
 - **Remove Fly.io** - the github actions for auto-deployment to Fly have been removed.
 - **Additional Features** - being able to copy message outputs from chat, and more to come.
 
