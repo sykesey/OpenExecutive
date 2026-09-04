@@ -19,9 +19,9 @@ resources:
 # first non-production installation.
 images:
   - name: ghcr.io/sykesey/openexecutive-ui
-    newTag: latest
+    newTag: sha-72bb3a7
   - name: ghcr.io/sykesey/openexecutive-api
-    newTag: latest
+    newTag: sha-72bb3a7
   - name: ghcr.io/sykesey/openexecutive-honcho
     # The Honcho image is first published by the new CI job. Pin this to its
     # sha-<commit> tag before enabling the optional Honcho overlay.

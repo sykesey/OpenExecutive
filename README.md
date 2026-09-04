@@ -1,5 +1,14 @@
 # Open Executive
 
+## Fork Details
+
+This repository is a fork of the original OpenExecutive codebase (https://github.com/SenteLabsAI/OpenExecutive), configured with additional items:
+- **Kubernetes Support** - kustomization-style deployment available in the ``k8s/`` directory.
+- **Additional Models** - Available models have been modified to support frontier models supporting tool-calling. E.g. google/gemini-3.7-flash is available and works reasonably well at significant cost savings over the default Claude.
+- **Additional Features** - being able to copy message outputs from chat, and more to come.
+
+## Background
+
 [![CI](https://github.com/SenteLabsAI/OpenExecutive/actions/workflows/ci.yml/badge.svg)](https://github.com/SenteLabsAI/OpenExecutive/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
